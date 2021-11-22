@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql
+    environment:
+      - MYSQL_DATABASE=contacts_db
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_USER=admin
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_PASSWORD=admin
+    ports:
+      - 3306
+    command: --authentication_policy=mysql_native_password
+    networks:
+      - server
+    volumes:
+      - ./src/sql/macapa.sql:/docker-entrypoint-initdb.d/macapa.sql
+
+  postgresql:
+    container_name: postgresql
+    image: postgres
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=contacts_db
+    networks:
+      - server
+    volumes:
+      - ./src/sql/varejao.sql:/docker-entrypoint-initdb.d/varejao.sql
+
+  clients_db:
+    container_name: clients_db
+    image: mongo
+    ports:
+      - 27017
+    command: --auth
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=clients_db
+    networks:
+      - server
+
+  express:
+    container_name: express
+    build: .
+    env_file: .env.prod
+    ports:
+      - 8000:8000
+    environment:
+      - NODE_ENV=prod
+    depends_on:
+      - clients_db
+      - postgresql
+      - mysql
+    networks:
+      - server
+
+networks:
+  server:
+    driver: bridge
